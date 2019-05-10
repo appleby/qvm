@@ -141,10 +141,16 @@
      :documentation "debug mode, specifically this causes the QVM to not automatically catch execution errors allowing interactive debugging via SWANK.")
 
     #+forest-sdk
-    (("skip-version-check"
-      :type boolean
-      :initial-value nil
-      :documentation "Do not check for a new QVM version at launch."))
+    (("check-sdk-version")
+     :type boolean
+     :initial-value nil
+     :documentation "Check for a new SDK version at launch.")
+
+    #+forest-sdk
+    (("proxy")
+     :type string
+     :initial-value nil
+     :documentation "Proxy to use when checking for an SDK update.")
 
     (("quiet")
      :type boolean
@@ -350,7 +356,8 @@ Copyright (c) 2016-2019 Rigetti Computing.~2%")
                           shared
                           simulation-method
                           #-forest-sdk debug
-                          #+forest-sdk skip-version-check
+                          #+forest-sdk check-sdk-version
+                          #+forest-sdk proxy
                           quiet
                           log-level)
 
@@ -377,13 +384,14 @@ Copyright (c) 2016-2019 Rigetti Computing.~2%")
     (check-libraries))
 
   #+forest-sdk
-  (unless skip-version-check
+  (when check-sdk-version
     (multiple-value-bind (available-p version)
-        (sdk-update-available-p +QVM-VERSION+)
+        (sdk-update-available-p +QVM-VERSION+ :proxy proxy)
       (when available-p
         (format t "An update is available to the SDK. You have version ~A. ~
 Version ~A is available from https://www.rigetti.com/forest~%"
-                +QVM-VERSION+ version))))
+                +QVM-VERSION+ version))
+      (uiop:quit (if (and available-p version) 0 1))))
 
   (when verbose
     (setf qvm:*transition-verbose* t))
